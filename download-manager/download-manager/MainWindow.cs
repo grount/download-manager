@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -22,18 +24,9 @@ namespace download_manager
         {
             InitializeComponent();
             m_isSaveSelected = false;
+            m_selectedPath = "";
         }
 
-        private void downloadButton_Click(object sender, EventArgs e)
-        {
-            await httpClientGetAsync();
-            saveTheFileDialog();
-
-            if (m_isSaveSelected == false)
-            {
-                invalidPath();
-            }
-        }
 
         private async Task httpClientGetAsync()
         {
@@ -48,7 +41,7 @@ namespace download_manager
 
         private void urlTextBox_TextChanged(object sender, EventArgs e)
         {
-            m_downloadUrl = urlTextBox.Text;
+            m_downloadUrl = urlTextBox.Text.ToString();
 
             if (m_downloadUrl != "")
             {
@@ -59,7 +52,10 @@ namespace download_manager
         private void saveTheFileDialog()
         {
             downloadSaveFileDialog.Title = "Save the file";
+            string extenstion = Path.GetExtension(m_downloadUrl);
+            downloadSaveFileDialog.Filter = "test|*" + extenstion;
             downloadSaveFileDialog.ShowDialog();
+
 
             if (downloadSaveFileDialog.FileName != "")
             {
@@ -74,7 +70,16 @@ namespace download_manager
         private void invalidPath()
         {
             MessageBox.Show("Please select a folder", "No folder selected", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void DownloadButton_Click_1(object sender, EventArgs e)
+        {
             saveTheFileDialog();
+
+            if (m_isSaveSelected == false)
+            {
+                invalidPath();
+            }
         }
     }
 }
