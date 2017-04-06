@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
-using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -16,14 +15,12 @@ namespace download_manager
 {
     public partial class MainWindow : Form
     {
+        string m_downloadUrl;
         string m_selectedPath;
         string m_fullPath;
         bool m_isSaveSelected;
         bool m_isUrlSelected;
         DataGridViewProgressColumn m_column;
-        Stopwatch m_stopWatch = new Stopwatch();
-        List<string> m_downloadUrlList;
-        int m_downloadListIndex;
 
         public MainWindow()
         {
@@ -31,29 +28,28 @@ namespace download_manager
             m_isSaveSelected = false;
             m_selectedPath = "";
             m_column = new DataGridViewProgressColumn();
-            m_downloadUrlList = new List<string>();
-            m_downloadListIndex = 0;
 
             ManageDownloadDataGridView();
+
         }
 
         private void ManageDownloadDataGridView()
         {
-            downloadDataGridView.ColumnCount = 4;
+            downloadDataGridView.ColumnCount = 3;
             downloadDataGridView.Columns[0].Name = "File Name";
+            downloadDataGridView.Columns[0].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
             downloadDataGridView.Columns[1].Name = "File Path";
-            downloadDataGridView.Columns[2].Name = "Transfer Rate";
-            downloadDataGridView.Columns[3].Name = "Data Downloaded";
-
-            for (int i = 0; i < downloadDataGridView.ColumnCount; i++)
-            {
-                downloadDataGridView.Columns[i].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-            }
-
+            downloadDataGridView.Columns[1].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            downloadDataGridView.Columns[2].Name = "Download Speed";
+            downloadDataGridView.Columns[2].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
             downloadDataGridView.Columns.Add(m_column);
-            downloadDataGridView.Columns[4].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-
+            downloadDataGridView.Columns[3].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
             m_column.HeaderText = "Progress";
+
+            //object[] row1 = new object[] { "test1", "test2", 50 };
+            //object[] row2 = new object[] { "test1", "test2", 55 };
+            //object[] row3 = new object[] { "test1", "test2", 22 };
+            //object[] rows = new object[] { row1, row2, row3 };
 
             //foreach (object[] row in rows)
             //{
@@ -74,19 +70,24 @@ namespace download_manager
 
         private void urlTextBox_TextChanged(object sender, EventArgs e)
         {
+            m_downloadUrl = urlTextBox.Text.ToString();
 
+            if (m_downloadUrl != "")
+            {
+                m_isUrlSelected = true;
+            }
         }
 
         private void SaveTheFileDialog()
         {
-            string extenstion = Path.GetExtension(m_downloadUrlList[m_downloadUrlList.Count - 1]);
-            string fileName = Path.GetFileName(m_downloadUrlList[m_downloadUrlList.Count - 1]);
+            string extenstion = Path.GetExtension(m_downloadUrl);
+            string fileName = Path.GetFileName(m_downloadUrl);
 
             downloadSaveFileDialog.Title = "Save the file";
             downloadSaveFileDialog.FileName = fileName;
             downloadSaveFileDialog.Filter = "|*" + extenstion;
             downloadSaveFileDialog.ShowDialog();
-
+           
             if (downloadSaveFileDialog.FileName != "")
             {
                 m_isSaveSelected = true;
@@ -107,12 +108,7 @@ namespace download_manager
         {
             if (m_isSaveSelected == true)
             {
-
-                for (; m_downloadListIndex < downloadDataGridView.RowCount - 1; m_downloadListIndex++) // TODO create multithreaded download
-                {
-                    await startDownloadAsync(m_downloadListIndex);
-                }
-
+                await startDownloadAsync();
                 urlTextBox.Clear();
             }
             else
@@ -121,49 +117,20 @@ namespace download_manager
             }
         }
 
-        private async Task startDownloadAsync(int index)
+        private async Task startDownloadAsync()
         {
             WebClient wc = new WebClient();
-            Uri uri = new Uri(m_downloadUrlList[index]);
-            wc.DownloadProgressChanged += DownloadProgressChanged;
-            wc.DownloadFileCompleted += (sender, e) =>
-            {
-                m_stopWatch.Reset();
-                downloadDataGridView.Rows[m_downloadListIndex].Cells[2].Value = "0 KB/s";
-            };
-                m_stopWatch.Start();
-
-            try
-            {
-                await wc.DownloadFileTaskAsync(uri, downloadDataGridView.Rows[index].Cells[1].Value.ToString());
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
+            Uri uri = new Uri(m_downloadUrl);
+            //wc.DownloadProgressChanged += Wc_DownloadProgressChanged;
+            //wc.DownloadProgressChanged += (sender, e) => downloadProgressBar.Value = e.ProgressPercentage;
+            wc.DownloadProgressChanged += (sender, e) => downloadDataGridView.Rows[0].Cells[2].Value = e.ProgressPercentage;
+            await wc.DownloadFileTaskAsync(uri, m_fullPath);
         }
-
-        private void DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
-        {
-            downloadDataGridView.Rows[m_downloadListIndex].Cells[4].Value = e.ProgressPercentage;
-            downloadDataGridView.Rows[m_downloadListIndex].Cells[2].Value = string.Format("{0} KB/s", (e.BytesReceived / 1024d / m_stopWatch.Elapsed.TotalSeconds).ToString("0.00"));
-            downloadDataGridView.Rows[m_downloadListIndex].Cells[3].Value = string.Format("{0} MB / {1} MB",
-                (e.BytesReceived / 1024d / 1024d).ToString("0.00"),
-                (e.TotalBytesToReceive / 1024d / 1024d).ToString("0.00"));
-        }
-
 
         private void addButton_Click(object sender, EventArgs e)
         {
-            m_downloadUrlList.Add(urlTextBox.Text.ToString());
-
-            if (m_downloadUrlList[m_downloadUrlList.Count - 1] != "")
-            {
-                m_isUrlSelected = true;
-            }
-
             SaveTheFileDialog();
-            object[] row = new object[] { Path.GetFileName(m_fullPath).ToString(), m_fullPath, "0 KB/s", 0 };
+            object[] row = new object[] { Path.GetFileName(m_fullPath).ToString(), m_fullPath, "0 kb/s", 0};
             downloadDataGridView.Rows.Add(row);
         }
     }
