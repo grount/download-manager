@@ -17,6 +17,7 @@ namespace download_manager
     {
         string m_downloadUrl;
         string m_selectedPath;
+        string m_fullPath;
         bool m_isSaveSelected;
         bool m_isUrlSelected;
 
@@ -28,7 +29,7 @@ namespace download_manager
         }
 
 
-        private async Task httpClientGetAsync()
+        private async Task HttpClientGetAsync()
         {
             if (m_isUrlSelected == true)
             {
@@ -49,17 +50,20 @@ namespace download_manager
             }
         }
 
-        private void saveTheFileDialog()
+        private void SaveTheFileDialog()
         {
-            downloadSaveFileDialog.Title = "Save the file";
             string extenstion = Path.GetExtension(m_downloadUrl);
-            downloadSaveFileDialog.Filter = "test|*" + extenstion;
+            string fileName = Path.GetFileName(m_downloadUrl);
+
+            downloadSaveFileDialog.Title = "Save the file";
+            downloadSaveFileDialog.FileName = fileName;
+            downloadSaveFileDialog.Filter = "|*" + extenstion;
             downloadSaveFileDialog.ShowDialog();
-
-
+           
             if (downloadSaveFileDialog.FileName != "")
             {
                 m_isSaveSelected = true;
+                m_fullPath = Path.GetFullPath(downloadSaveFileDialog.FileName);
             }
             else
             {
@@ -67,19 +71,33 @@ namespace download_manager
             }
         }
 
-        private void invalidPath()
+        private void InvalidPath()
         {
             MessageBox.Show("Please select a folder", "No folder selected", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
-        private void DownloadButton_Click_1(object sender, EventArgs e)
+        private async void DownloadButton_Click_1(object sender, EventArgs e)
         {
-            saveTheFileDialog();
+            SaveTheFileDialog();
 
-            if (m_isSaveSelected == false)
+            if (m_isSaveSelected == true)
             {
-                invalidPath();
+               await startDownloadAsync();
             }
+            else
+            {
+                InvalidPath();
+            }
+        }
+
+        private async Task startDownloadAsync()
+        {
+            WebClient wc = new WebClient();
+            Uri uri = new Uri(m_downloadUrl);
+
+            //wc.DownloadProgressChanged += Wc_DownloadProgressChanged;
+            wc.DownloadProgressChanged += (sender, e) => downloadProgressBar.Value = e.ProgressPercentage;
+            await wc.DownloadFileTaskAsync(uri, m_fullPath);
         }
     }
 }
