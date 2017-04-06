@@ -122,7 +122,6 @@ namespace download_manager
             Uri uri = new Uri(m_downloadUrl);
             wc.DownloadProgressChanged += DownloadProgressChanged;
             wc.DownloadFileCompleted += (sender, e) => m_stopWatch.Reset();
-
             m_stopWatch.Start();
 
             try
@@ -143,7 +142,6 @@ namespace download_manager
             downloadDataGridView.Rows[0].Cells[3].Value = string.Format("{0} MB / {1} MB",
                 (e.BytesReceived / 1024d / 1024d).ToString("0.00"),
                 (e.TotalBytesToReceive / 1024d / 1024d).ToString("0.00"));
-
         }
 
 
