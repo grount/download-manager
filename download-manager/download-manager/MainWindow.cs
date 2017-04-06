@@ -121,7 +121,6 @@ namespace download_manager
         {
             WebClient wc = new WebClient();
             Uri uri = new Uri(m_downloadUrl);
-
             //wc.DownloadProgressChanged += Wc_DownloadProgressChanged;
             //wc.DownloadProgressChanged += (sender, e) => downloadProgressBar.Value = e.ProgressPercentage;
             wc.DownloadProgressChanged += (sender, e) => downloadDataGridView.Rows[0].Cells[2].Value = e.ProgressPercentage;
