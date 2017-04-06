@@ -20,14 +20,42 @@ namespace download_manager
         string m_fullPath;
         bool m_isSaveSelected;
         bool m_isUrlSelected;
+        DataGridViewProgressColumn m_column;
 
         public MainWindow()
         {
             InitializeComponent();
             m_isSaveSelected = false;
             m_selectedPath = "";
+            m_column = new DataGridViewProgressColumn();
+
+            ManageDownloadDataGridView();
+
         }
 
+        private void ManageDownloadDataGridView()
+        {
+            downloadDataGridView.ColumnCount = 3;
+            downloadDataGridView.Columns[0].Name = "File Name";
+            downloadDataGridView.Columns[0].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            downloadDataGridView.Columns[1].Name = "File Path";
+            downloadDataGridView.Columns[1].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            downloadDataGridView.Columns[2].Name = "Download Speed";
+            downloadDataGridView.Columns[2].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            downloadDataGridView.Columns.Add(m_column);
+            downloadDataGridView.Columns[3].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            m_column.HeaderText = "Progress";
+
+            //object[] row1 = new object[] { "test1", "test2", 50 };
+            //object[] row2 = new object[] { "test1", "test2", 55 };
+            //object[] row3 = new object[] { "test1", "test2", 22 };
+            //object[] rows = new object[] { row1, row2, row3 };
+
+            //foreach (object[] row in rows)
+            //{
+            //    downloadDataGridView.Rows.Add(row);
+            //}
+        }
 
         private async Task HttpClientGetAsync()
         {
@@ -78,11 +106,10 @@ namespace download_manager
 
         private async void DownloadButton_Click_1(object sender, EventArgs e)
         {
-            SaveTheFileDialog();
-
             if (m_isSaveSelected == true)
             {
-               await startDownloadAsync();
+                await startDownloadAsync();
+                urlTextBox.Clear();
             }
             else
             {
@@ -96,8 +123,16 @@ namespace download_manager
             Uri uri = new Uri(m_downloadUrl);
 
             //wc.DownloadProgressChanged += Wc_DownloadProgressChanged;
-            wc.DownloadProgressChanged += (sender, e) => downloadProgressBar.Value = e.ProgressPercentage;
+            //wc.DownloadProgressChanged += (sender, e) => downloadProgressBar.Value = e.ProgressPercentage;
+            wc.DownloadProgressChanged += (sender, e) => downloadDataGridView.Rows[0].Cells[2].Value = e.ProgressPercentage;
             await wc.DownloadFileTaskAsync(uri, m_fullPath);
+        }
+
+        private void addButton_Click(object sender, EventArgs e)
+        {
+            SaveTheFileDialog();
+            object[] row = new object[] { Path.GetFileName(m_fullPath).ToString(), m_fullPath, "0 kb/s", 0};
+            downloadDataGridView.Rows.Add(row);
         }
     }
 }
