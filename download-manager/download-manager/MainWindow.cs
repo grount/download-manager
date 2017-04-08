@@ -21,8 +21,8 @@ namespace download_manager
         bool m_isSaveSelected;
         bool m_isUrlSelected;
         DataGridViewProgressColumn m_column;
-        Stopwatch m_stopWatch = new Stopwatch();
-        List<string> m_downloadUrlList;
+        Stopwatch m_stopWatch;
+        Queue<string> m_urlQueue;
         int m_downloadListIndex;
 
         public MainWindow()
@@ -31,7 +31,8 @@ namespace download_manager
             m_isSaveSelected = false;
             m_selectedPath = "";
             m_column = new DataGridViewProgressColumn();
-            m_downloadUrlList = new List<string>();
+            m_urlQueue = new Queue<string>();
+            m_stopWatch = new Stopwatch();
             m_downloadListIndex = 0;
 
             ManageDownloadDataGridView();
@@ -72,15 +73,10 @@ namespace download_manager
             }
         }
 
-        private void urlTextBox_TextChanged(object sender, EventArgs e)
+        private void SaveTheFileDialog(string url)
         {
-
-        }
-
-        private void SaveTheFileDialog()
-        {
-            string extenstion = Path.GetExtension(m_downloadUrlList[m_downloadUrlList.Count - 1]);
-            string fileName = Path.GetFileName(m_downloadUrlList[m_downloadUrlList.Count - 1]);
+            string extenstion = Path.GetExtension(url);
+            string fileName = Path.GetFileName(url);
 
             downloadSaveFileDialog.Title = "Save the file";
             downloadSaveFileDialog.FileName = fileName;
@@ -107,11 +103,11 @@ namespace download_manager
         {
             if (m_isSaveSelected == true)
             {
-
                 for (; m_downloadListIndex < downloadDataGridView.RowCount - 1; m_downloadListIndex++) // TODO create multithreaded download
                 {
-                    await startDownloadAsync(m_downloadListIndex);
+                    await StartDownloadAsync();
                 }
+
 
                 urlTextBox.Clear();
             }
@@ -121,10 +117,10 @@ namespace download_manager
             }
         }
 
-        private async Task startDownloadAsync(int index)
+        private async Task StartDownloadAsync()
         {
             WebClient wc = new WebClient();
-            Uri uri = new Uri(m_downloadUrlList[index]);
+            Uri uri = new Uri(m_urlQueue.Dequeue());
             wc.DownloadProgressChanged += DownloadProgressChanged;
             wc.DownloadFileCompleted += (sender, e) =>
             {
@@ -135,7 +131,7 @@ namespace download_manager
 
             try
             {
-                await wc.DownloadFileTaskAsync(uri, downloadDataGridView.Rows[index].Cells[1].Value.ToString());
+                await wc.DownloadFileTaskAsync(uri, downloadDataGridView.Rows[m_downloadListIndex].Cells[1].Value.ToString());
             }
             catch (Exception ex)
             {
@@ -153,16 +149,16 @@ namespace download_manager
         }
 
 
-        private void addButton_Click(object sender, EventArgs e)
+        private void AddButton_Click(object sender, EventArgs e)
         {
-            m_downloadUrlList.Add(urlTextBox.Text.ToString());
-
-            if (m_downloadUrlList[m_downloadUrlList.Count - 1] != "")
+            string url = urlTextBox.Text.ToString();
+            m_urlQueue.Enqueue(url);
+            if (url != "")
             {
                 m_isUrlSelected = true;
             }
 
-            SaveTheFileDialog();
+            SaveTheFileDialog(url);
             object[] row = new object[] { Path.GetFileName(m_fullPath).ToString(), m_fullPath, "0 KB/s", 0 };
             downloadDataGridView.Rows.Add(row);
         }
