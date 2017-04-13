@@ -44,11 +44,6 @@ namespace download_manager
             downloadDataGridView.Columns[4].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
 
             m_column.HeaderText = "Progress";
-
-            //foreach (object[] row in rows)
-            //{
-            //    downloadDataGridView.Rows.Add(row);
-            //}
         }
 
         //private async Task HttpClientGetAsync()
