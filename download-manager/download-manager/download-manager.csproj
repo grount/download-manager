@@ -46,6 +46,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DataGridViewProgressColumn.cs" />
+    <Compile Include="DownloadStatus.cs" />
+    <Compile Include="FileDownload.cs" />
+    <Compile Include="IDownloader.cs" />
     <Compile Include="MainWindow.cs">
       <SubType>Form</SubType>
     </Compile>
