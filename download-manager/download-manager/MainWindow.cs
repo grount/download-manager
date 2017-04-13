@@ -1,14 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Diagnostics;
-using System.Drawing;
 using System.IO;
-using System.Linq;
-using System.Net;
 using System.Net.Http;
-using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -30,8 +23,7 @@ namespace download_manager
             m_isSaveSelected = false;
             m_selectedPath = "";
             m_column = new DataGridViewProgressColumn();
-            m_Downloader = new FileDownload();
-            m_Downloader.m_DataGrid = downloadDataGridView;
+            m_Downloader = new FileDownload {m_DataGrid = downloadDataGridView};
             ManageDownloadDataGridView();
         }
 
@@ -59,16 +51,16 @@ namespace download_manager
             //}
         }
 
-        private async Task HttpClientGetAsync()
-        {
-            if (m_isUrlSelected == true)
-            {
-                HttpClient client = new HttpClient();
-                var response = await client.GetAsync(m_selectedPath);
-                var filetype = response.Content.Headers.ContentType.MediaType;
-                var imageArray = await response.Content.ReadAsByteArrayAsync();
-            }
-        }
+        //private async Task HttpClientGetAsync()
+        //{
+        //    if (m_isUrlSelected == true)
+        //    {
+        //        HttpClient client = new HttpClient();
+        //        var response = await client.GetAsync(m_selectedPath);
+        //        var filetype = response.Content.Headers.ContentType.MediaType;
+        //        var imageArray = await response.Content.ReadAsByteArrayAsync();
+        //    }
+        //}
 
         private void SaveTheFileDialog(string url)
         {
@@ -105,7 +97,10 @@ namespace download_manager
                 //    await StartDownloadAsync();
                 //}
 
-                m_Downloader.Start();
+                m_Downloader.DownloadProgressChanged += DownloadProgressChanged;
+                
+                Thread t = new Thread(m_Downloader.Start);
+                t.Start();
                 urlTextBox.Clear();
             }
             else
@@ -113,6 +108,7 @@ namespace download_manager
                 InvalidPath();
             }
         }
+
 
         //private async Task StartDownloadAsync()
         //{
@@ -136,27 +132,34 @@ namespace download_manager
         //    }
         //}
 
-        //private void DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
-        //{
-        //    downloadDataGridView.Rows[m_downloadListIndex].Cells[4].Value = e.ProgressPercentage;
-        //    downloadDataGridView.Rows[m_downloadListIndex].Cells[2].Value = string.Format("{0} KB/s", (e.BytesReceived / 1024d / m_stopWatch.Elapsed.TotalSeconds).ToString("0.00"));
-        //    downloadDataGridView.Rows[m_downloadListIndex].Cells[3].Value = string.Format("{0} MB / {1} MB",
-        //        (e.BytesReceived / 1024d / 1024d).ToString("0.00"),
-        //        (e.TotalBytesToReceive / 1024d / 1024d).ToString("0.00"));
-        //}
-
-
         private void AddButton_Click(object sender, EventArgs e)
         {
-            string url = urlTextBox.Text.ToString();
+            string url = urlTextBox.Text;
             m_Downloader.m_UrlQueue.Enqueue(url);
-            if (url != "")
+
+            if (url == "")
             {
-                m_isUrlSelected = true;
-                SaveTheFileDialog(url);
-                object[] row = new object[] { Path.GetFileName(m_fullPath).ToString(), m_fullPath, "0 KB/s", 0 };
-                downloadDataGridView.Rows.Add(row);
+                throw new ApplicationException("No url selected!");
             }
+
+            m_isUrlSelected = true;
+            SaveTheFileDialog(url);
+            object[] row = new object[] { Path.GetFileName(m_fullPath), m_fullPath, "0 KB/s", 0 };
+            downloadDataGridView.Rows.Add(row);
+
+        }
+
+        private void DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
+        {
+            Invoke(new EventHandler<DownloadProgressChangedEventArgs>(DownloadProgressChangedHandler), sender, e);
+        }
+
+        private void DownloadProgressChangedHandler(object sender, DownloadProgressChangedEventArgs e)
+        {
+            downloadDataGridView.Rows[0].Cells[4].Value = e.ProgressPercentage;
+            downloadDataGridView.Rows[0].Cells[2].Value = $"{e.DownloadSpeed} KB/s";
+            downloadDataGridView.Rows[0].Cells[3].Value =
+                $"{(e.RecievedSize / 1024d / 1024d):0.00} MB / {(e.TotalSize / 1024d / 1024d):0.00} MB";
         }
     }
 }
