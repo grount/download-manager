@@ -1,6 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -15,7 +15,7 @@ namespace download_manager
         bool m_isUrlSelected;
         DataGridViewProgressColumn m_column;
         FileDownload m_Downloader;
-
+        private int m_ThreadIndex;
 
         public MainWindow()
         {
@@ -24,6 +24,7 @@ namespace download_manager
             m_selectedPath = "";
             m_column = new DataGridViewProgressColumn();
             m_Downloader = new FileDownload {m_DataGrid = downloadDataGridView};
+            m_ThreadIndex = 0;
             ManageDownloadDataGridView();
         }
 
@@ -87,15 +88,15 @@ namespace download_manager
         {
             if (m_isSaveSelected == true)
             {
-                //for (; m_downloadListIndex < downloadDataGridView.RowCount - 1; m_downloadListIndex++) // TODO create multithreaded download
-                //{
-                //    await StartDownloadAsync();
-                //}
-
                 m_Downloader.DownloadProgressChanged += DownloadProgressChanged;
-                
-                Thread t = new Thread(m_Downloader.Start);
-                t.Start();
+                m_Downloader.DownloadCompleted += DownloadCompleted;
+ 
+                for (m_ThreadIndex = 0; m_ThreadIndex < 1; m_ThreadIndex++)
+                {
+                    Task.Factory.StartNew(m_Downloader.Start);
+                }
+                Task.WaitAll();
+
                 urlTextBox.Clear();
             }
             else
@@ -103,29 +104,6 @@ namespace download_manager
                 InvalidPath();
             }
         }
-
-
-        //private async Task StartDownloadAsync()
-        //{
-        //    WebClient wc = new WebClient();
-        //    Uri uri = new Uri(m_Downloader.m_UrlQueue.Dequeue());
-        //    wc.DownloadProgressChanged += DownloadProgressChanged;
-        //    wc.DownloadFileCompleted += (sender, e) =>
-        //    {
-        //        m_stopWatch.Reset();
-        //        downloadDataGridView.Rows[m_downloadListIndex].Cells[2].Value = "0 KB/s";
-        //    };
-        //        m_stopWatch.Start();
-
-        //    try
-        //    {
-        //        await wc.DownloadFileTaskAsync(uri, downloadDataGridView.Rows[m_downloadListIndex].Cells[1].Value.ToString());
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        MessageBox.Show(ex.Message);
-        //    }
-        //}
 
         private void AddButton_Click(object sender, EventArgs e)
         {
@@ -149,12 +127,28 @@ namespace download_manager
             Invoke(new EventHandler<DownloadProgressChangedEventArgs>(DownloadProgressChangedHandler), sender, e);
         }
 
+        private void DownloadCompleted(object sender, DownloadCompletedEventArgs e)
+        {
+            Invoke(new EventHandler<DownloadCompletedEventArgs>(DownloadCompletedEventHandler), sender, e);
+        }
+
+        private void DownloadCompletedEventHandler(object sender, DownloadCompletedEventArgs e)
+        {
+            m_Downloader.m_StopWatch.Reset();
+            downloadDataGridView.Rows[e.m_CurrentThreadIndex].Cells[2].Value = "0 KB/s";
+        }
+
         private void DownloadProgressChangedHandler(object sender, DownloadProgressChangedEventArgs e)
         {
-            downloadDataGridView.Rows[0].Cells[4].Value = e.ProgressPercentage;
-            downloadDataGridView.Rows[0].Cells[2].Value = $"{e.DownloadSpeed} KB/s";
-            downloadDataGridView.Rows[0].Cells[3].Value =
+            downloadDataGridView.Rows[e.ThreadIndex].Cells[4].Value = e.ProgressPercentage;
+            downloadDataGridView.Rows[e.ThreadIndex].Cells[2].Value = $"{e.DownloadSpeed} KB/s";
+            downloadDataGridView.Rows[e.ThreadIndex].Cells[3].Value =
                 $"{(e.RecievedSize / 1024d / 1024d):0.00} MB / {(e.TotalSize / 1024d / 1024d):0.00} MB";
+        }
+
+        private void OptionsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }
