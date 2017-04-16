@@ -40,7 +40,7 @@ namespace download_manager
             Download();
         }
 
-        void Download()
+        public void Download()
         {
             WebRequest webRequest = null;
             WebResponse webResponse = null;

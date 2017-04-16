@@ -45,6 +45,25 @@ namespace download_manager
             downloadDataGridView.Columns[4].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
 
             m_column.HeaderText = "Progress";
+
+            object[] arow = new object[] { "1604.exe", "F:\\1604.exe", "0 KB/s", 0 };
+            downloadDataGridView.Rows.Add(arow);
+            m_Downloader.m_UrlQueue.Enqueue("https://web.whatsapp.com/desktop/windows/release/x64/WhatsAppSetup.exe");
+
+            object[] arow2 = new object[] { "1605.exe", "F:\\1605.exe", "0 KB/s", 0 };
+            downloadDataGridView.Rows.Add(arow2);
+            m_Downloader.m_UrlQueue.Enqueue("https://web.whatsapp.com/desktop/windows/release/x64/WhatsAppSetup.exe");
+
+            object[] arow3 = new object[] { "1606.exe", "F:\\1606.exe", "0 KB/s", 0 };
+            downloadDataGridView.Rows.Add(arow3);
+            m_Downloader.m_UrlQueue.Enqueue("https://web.whatsapp.com/desktop/windows/release/x64/WhatsAppSetup.exe");
+
+            object[] arow4 = new object[] { "1607.exe", "F:\\1607.exe", "0 KB/s", 0 };
+            downloadDataGridView.Rows.Add(arow4);
+            m_Downloader.m_UrlQueue.Enqueue("https://web.whatsapp.com/desktop/windows/release/x64/WhatsAppSetup.exe");
+
+            m_isSaveSelected = true;
+            m_isUrlSelected = true;
         }
 
         private void SaveTheFileDialog(string url)
@@ -77,20 +96,24 @@ namespace download_manager
             if (m_isSaveSelected)
             {
 
-                FileDownload[] fileDownloads = new FileDownload[2];
-                fileDownloads[0] = new FileDownload();
-                fileDownloads[1] = new FileDownload();
-                for (int i = 0; i < 2; i++)
+                for (int i = 0; i < downloadDataGridView.RowCount - 1;)
                 {
-                    int index = i;
-                    fileDownloads[index].DownloadProgressChanged += DownloadProgressChanged;
-                    fileDownloads[index].DownloadCompleted += DownloadCompleted;
-                    fileDownloads[index].m_UrlQueue.Enqueue(m_Downloader.m_UrlQueue.Dequeue());
-                    string downloadPath = downloadDataGridView.Rows[index].Cells[1].Value.ToString();
-                    Task.Factory.StartNew(() => fileDownloads[index].Start(downloadPath, index));
+                    FileDownload[] fileDownloads = new FileDownload[2];
+                    fileDownloads[0] = new FileDownload();
+                    fileDownloads[1] = new FileDownload();
+
+                    for (int k = 0; k < 2; k++, i++)
+                    {
+                        int index = k;
+                        int rowIndex = i;
+                        fileDownloads[index].DownloadProgressChanged += DownloadProgressChanged;
+                        fileDownloads[index].DownloadCompleted += DownloadCompleted;
+                        fileDownloads[index].m_UrlQueue.Enqueue(m_Downloader.m_UrlQueue.Dequeue());
+                        string downloadPath = downloadDataGridView.Rows[rowIndex].Cells[1].Value.ToString();
+                        Task.Factory.StartNew(() => fileDownloads[index].Start(downloadPath, rowIndex));
+                    }
+                    Task.WaitAll();     
                 }
-
-
 
                 urlTextBox.Clear();
             }
@@ -113,6 +136,9 @@ namespace download_manager
             m_isUrlSelected = true;
             SaveTheFileDialog(url);
             object[] row = new object[] { Path.GetFileName(m_fullPath), m_fullPath, "0 KB/s", 0 };
+
+      
+
             downloadDataGridView.Rows.Add(row);
 
         }
