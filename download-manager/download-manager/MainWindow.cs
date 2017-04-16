@@ -66,9 +66,8 @@ namespace download_manager
             downloadSaveFileDialog.Title = "Save the file";
             downloadSaveFileDialog.FileName = fileName;
             downloadSaveFileDialog.Filter = "|*" + extenstion;
-            downloadSaveFileDialog.ShowDialog();
 
-            if (downloadSaveFileDialog.FileName != "")
+            if (downloadSaveFileDialog.ShowDialog() == DialogResult.OK)
             {
                 m_isSaveSelected = true;
                 m_fullPath = Path.GetFullPath(downloadSaveFileDialog.FileName);
@@ -88,15 +87,18 @@ namespace download_manager
         {
             if (m_isSaveSelected == true)
             {
-                m_Downloader.DownloadProgressChanged += DownloadProgressChanged;
-                m_Downloader.DownloadCompleted += DownloadCompleted;
- 
-                for (m_ThreadIndex = 0; m_ThreadIndex < 1; m_ThreadIndex++)
+                for (var i = 0; i < 2; i++) // downloadDataGridView.RowCount - 1
                 {
-                    Task.Factory.StartNew(m_Downloader.Start);
+                    for (m_ThreadIndex = 0; m_ThreadIndex < 2; m_ThreadIndex++)
+                    {
+                        m_Downloader.DownloadProgressChanged += DownloadProgressChanged;
+                        m_Downloader.DownloadCompleted += DownloadCompleted;
+                        var i1 = i;
+                        Task.Factory.StartNew(() => m_Downloader.Start(i1));
+                        i++;
+                    }
+                    Task.WaitAll();
                 }
-                Task.WaitAll();
-
                 urlTextBox.Clear();
             }
             else
@@ -105,7 +107,7 @@ namespace download_manager
             }
         }
 
-        private void AddButton_Click(object sender, EventArgs e)
+        private void AddButton_Click(object sender, EventArgs e) // TOOD cancel in add, adds still
         {
             string url = urlTextBox.Text;
             m_Downloader.m_UrlQueue.Enqueue(url);

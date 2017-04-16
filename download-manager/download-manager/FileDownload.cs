@@ -18,10 +18,13 @@ namespace download_manager
         public long m_TotalSize { get; set; }
         public int m_TotalBytesRecieved { get; set; }
         private int m_bytesRead { get; set; }
-        private static int m_ThreadIndexCount { get; set; }
+        [ThreadStatic] private static int m_ThreadIndex;
+
 
         public event EventHandler<DownloadProgressChangedEventArgs> DownloadProgressChanged;
         public event EventHandler<DownloadCompletedEventArgs> DownloadCompleted;
+
+        private object lockTarget;
 
         public FileDownload()
         {
@@ -30,11 +33,14 @@ namespace download_manager
             e_DownloadStatus = new DownloadStatus();
             m_BufferSize = 1024;
             m_TotalBytesRecieved = 0;
-            m_ThreadIndexCount = 0;
+            //m_ThreadIndexCount = -1;
+            m_ThreadIndex = 0;
+            lockTarget = new object();
         }
 
-        public void Start()
+        public void Start(int index)
         {
+            m_ThreadIndex = index;
             Download();
         }
 
@@ -60,7 +66,13 @@ namespace download_manager
 
                 m_StopWatch.Start(); // TODO when completed stop watch..
                 remoteStream = webResponse.GetResponseStream();
-                m_DownloadDestination = m_DataGrid.Rows[0].Cells[1].Value.ToString();
+
+                //lock (lockTarget)
+                //{
+                //    ++m_ThreadIndexCount;
+                //}
+
+                m_DownloadDestination = m_DataGrid.Rows[m_ThreadIndex].Cells[1].Value.ToString(); // TOOD m_threadindexcount to pass to thread
                 localStream = File.Create(m_DownloadDestination);
 
                 byte[] buffer = new byte[m_BufferSize];
@@ -84,7 +96,6 @@ namespace download_manager
             finally
             {
             InternalDownloadCompleted();
-            m_ThreadIndexCount++;
             webResponse?.Close();
             remoteStream?.Close();
             localStream?.Close();
@@ -94,7 +105,7 @@ namespace download_manager
 
         private void InternalDownloadCompleted()
         {
-            OnDownloadCompleted(new DownloadCompletedEventArgs(m_ThreadIndexCount));
+            OnDownloadCompleted(new DownloadCompletedEventArgs(m_ThreadIndex));
         }
 
         private void OnDownloadCompleted(DownloadCompletedEventArgs e)
@@ -105,7 +116,7 @@ namespace download_manager
         private void InternalDownloadProgressChanged()
         {
             OnDownloadProgressChanged(new DownloadProgressChangedEventArgs(m_TotalBytesRecieved, m_TotalSize,
-                (int) (m_TotalBytesRecieved / 1024d / m_StopWatch.Elapsed.TotalSeconds), m_ThreadIndexCount));
+                (int) (m_TotalBytesRecieved / 1024d / m_StopWatch.Elapsed.TotalSeconds), m_ThreadIndex));
         }
 
         protected virtual void OnDownloadProgressChanged(DownloadProgressChangedEventArgs e)
