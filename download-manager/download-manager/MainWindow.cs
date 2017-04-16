@@ -23,7 +23,7 @@ namespace download_manager
             m_isSaveSelected = false;
             m_selectedPath = "";
             m_column = new DataGridViewProgressColumn();
-            m_Downloader = new FileDownload {m_DataGrid = downloadDataGridView};
+            m_Downloader = new FileDownload { m_DataGrid = downloadDataGridView };
             m_ThreadIndex = 0;
             ManageDownloadDataGridView();
         }
@@ -46,17 +46,6 @@ namespace download_manager
 
             m_column.HeaderText = "Progress";
         }
-
-        //private async Task HttpClientGetAsync()
-        //{
-        //    if (m_isUrlSelected == true)
-        //    {
-        //        HttpClient client = new HttpClient();
-        //        var response = await client.GetAsync(m_selectedPath);
-        //        var filetype = response.Content.Headers.ContentType.MediaType;
-        //        var imageArray = await response.Content.ReadAsByteArrayAsync();
-        //    }
-        //}
 
         private void SaveTheFileDialog(string url)
         {
@@ -85,20 +74,24 @@ namespace download_manager
 
         private void DownloadButton_Click_1(object sender, EventArgs e)
         {
-            if (m_isSaveSelected == true)
+            if (m_isSaveSelected)
             {
-                for (var i = 0; i < 2; i++) // downloadDataGridView.RowCount - 1
+
+                FileDownload[] fileDownloads = new FileDownload[2];
+                fileDownloads[0] = new FileDownload();
+                fileDownloads[1] = new FileDownload();
+                for (int i = 0; i < 2; i++)
                 {
-                    for (m_ThreadIndex = 0; m_ThreadIndex < 2; m_ThreadIndex++)
-                    {
-                        m_Downloader.DownloadProgressChanged += DownloadProgressChanged;
-                        m_Downloader.DownloadCompleted += DownloadCompleted;
-                        var i1 = i;
-                        Task.Factory.StartNew(() => m_Downloader.Start(i1));
-                        i++;
-                    }
-                    Task.WaitAll();
+                    int index = i;
+                    fileDownloads[index].DownloadProgressChanged += DownloadProgressChanged;
+                    fileDownloads[index].DownloadCompleted += DownloadCompleted;
+                    fileDownloads[index].m_UrlQueue.Enqueue(m_Downloader.m_UrlQueue.Dequeue());
+                    string downloadPath = downloadDataGridView.Rows[index].Cells[1].Value.ToString();
+                    Task.Factory.StartNew(() => fileDownloads[index].Start(downloadPath, index));
                 }
+
+
+
                 urlTextBox.Clear();
             }
             else

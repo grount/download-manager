@@ -18,13 +18,10 @@ namespace download_manager
         public long m_TotalSize { get; set; }
         public int m_TotalBytesRecieved { get; set; }
         private int m_bytesRead { get; set; }
-        [ThreadStatic] private static int m_ThreadIndex;
-
-
+        private int m_ThreadIndex { get; set; }
         public event EventHandler<DownloadProgressChangedEventArgs> DownloadProgressChanged;
         public event EventHandler<DownloadCompletedEventArgs> DownloadCompleted;
 
-        private object lockTarget;
 
         public FileDownload()
         {
@@ -33,14 +30,13 @@ namespace download_manager
             e_DownloadStatus = new DownloadStatus();
             m_BufferSize = 1024;
             m_TotalBytesRecieved = 0;
-            //m_ThreadIndexCount = -1;
-            m_ThreadIndex = 0;
-            lockTarget = new object();
+
         }
 
-        public void Start(int index)
+        public void Start(string i_DownloadPath, int i_currentThreadIndex)
         {
-            m_ThreadIndex = index;
+            m_ThreadIndex = i_currentThreadIndex;
+            m_DownloadDestination = i_DownloadPath;
             Download();
         }
 
@@ -66,13 +62,6 @@ namespace download_manager
 
                 m_StopWatch.Start(); // TODO when completed stop watch..
                 remoteStream = webResponse.GetResponseStream();
-
-                //lock (lockTarget)
-                //{
-                //    ++m_ThreadIndexCount;
-                //}
-
-                m_DownloadDestination = m_DataGrid.Rows[m_ThreadIndex].Cells[1].Value.ToString(); // TOOD m_threadindexcount to pass to thread
                 localStream = File.Create(m_DownloadDestination);
 
                 byte[] buffer = new byte[m_BufferSize];
@@ -80,7 +69,7 @@ namespace download_manager
 
                 do
                 {
-                    m_bytesRead = remoteStream.Read(buffer, 0, buffer.Length);
+                    if (remoteStream != null) m_bytesRead = remoteStream.Read(buffer, 0, buffer.Length);
                     localStream.Write(buffer, 0, m_bytesRead);
 
                     m_TotalBytesRecieved += m_bytesRead;
@@ -123,6 +112,9 @@ namespace download_manager
         {
             DownloadProgressChanged?.Invoke(this, e);
         }
+
+
+
 
     }
 
