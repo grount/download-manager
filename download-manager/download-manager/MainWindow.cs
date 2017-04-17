@@ -15,7 +15,8 @@ namespace download_manager
         bool m_isUrlSelected;
         DataGridViewProgressColumn m_column;
         FileDownload m_Downloader;
-        private int m_ThreadIndex;
+        readonly OptionsForm m_optionsForm;
+        public static int m_numberOfSimultaneousDownloads;
 
         public MainWindow()
         {
@@ -24,8 +25,13 @@ namespace download_manager
             m_selectedPath = "";
             m_column = new DataGridViewProgressColumn();
             m_Downloader = new FileDownload { m_DataGrid = downloadDataGridView };
-            m_ThreadIndex = 0;
             ManageDownloadDataGridView();
+            m_optionsForm = new OptionsForm();
+
+            if (File.Exists("F:\\save.bin"))
+            {
+                m_numberOfSimultaneousDownloads = OptionsForm.ReadFromBinaryFile<int>("F:\\save.bin");
+            }
         }
 
         private void ManageDownloadDataGridView()
@@ -95,14 +101,23 @@ namespace download_manager
         {
             if (m_isSaveSelected)
             {
+                int rowsCountDataGridView = downloadDataGridView.RowCount - 1;
 
                 for (int i = 0; i < downloadDataGridView.RowCount - 1;)
                 {
-                    FileDownload[] fileDownloads = new FileDownload[2];
-                    fileDownloads[0] = new FileDownload();
-                    fileDownloads[1] = new FileDownload();
+                    FileDownload[] fileDownloads = new FileDownload[m_numberOfSimultaneousDownloads];
 
-                    for (int k = 0; k < 2; k++, i++)
+                    for (int j = 0; j < m_numberOfSimultaneousDownloads; j++)
+                    {
+                        fileDownloads[j] = new FileDownload();
+                    }
+
+                    if (rowsCountDataGridView < m_numberOfSimultaneousDownloads)
+                    {
+                        m_numberOfSimultaneousDownloads = rowsCountDataGridView;
+                    }
+
+                    for (int k = 0; k < m_numberOfSimultaneousDownloads; k++, i++)
                     {
                         int index = k;
                         int rowIndex = i;
@@ -112,7 +127,9 @@ namespace download_manager
                         string downloadPath = downloadDataGridView.Rows[rowIndex].Cells[1].Value.ToString();
                         Task.Factory.StartNew(() => fileDownloads[index].Start(downloadPath, rowIndex));
                     }
-                    Task.WaitAll();     
+
+                    Task.WaitAll();
+                    rowsCountDataGridView -= m_numberOfSimultaneousDownloads;
                 }
 
                 urlTextBox.Clear();
@@ -135,7 +152,7 @@ namespace download_manager
 
             m_isUrlSelected = true;
             SaveTheFileDialog(url);
-            object[] row = new object[] { Path.GetFileName(m_fullPath), m_fullPath, "0 KB/s", 0 };
+            object[] row = { Path.GetFileName(m_fullPath), m_fullPath, "0 KB/s", 0 };
 
       
 
@@ -169,7 +186,7 @@ namespace download_manager
 
         private void OptionsToolStripMenuItem_Click(object sender, EventArgs e)
         {
-
+            m_optionsForm.ShowDialog();
         }
     }
 }
