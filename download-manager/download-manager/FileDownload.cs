@@ -112,10 +112,5 @@ namespace download_manager
         {
             DownloadProgressChanged?.Invoke(this, e);
         }
-
-
-
-
     }
-
 }

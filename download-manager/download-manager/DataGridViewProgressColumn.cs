@@ -22,14 +22,17 @@ namespace download_manager
     {
         // Used to make custom cell consistent with a DataGridViewImageCell
         static Image emptyImage;
+
         static DataGridViewProgressCell()
         {
             emptyImage = new Bitmap(1, 1, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
         }
+
         public DataGridViewProgressCell()
         {
             this.ValueType = typeof(int);
         }
+
         // Method required to make the Progress Cell consistent with the default Image Cell. 
         // The default Image Cell assumes an Image as a value, although the value of the Progress Cell is an int.
         protected override object GetFormattedValue(object value,
@@ -40,6 +43,7 @@ namespace download_manager
         {
             return emptyImage;
         }
+
         protected override void Paint(System.Drawing.Graphics g, System.Drawing.Rectangle clipBounds, System.Drawing.Rectangle cellBounds, int rowIndex, DataGridViewElementStates cellState, object value, object formattedValue, string errorText, DataGridViewCellStyle cellStyle, DataGridViewAdvancedBorderStyle advancedBorderStyle, DataGridViewPaintParts paintParts)
         {
             try
