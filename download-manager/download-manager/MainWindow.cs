@@ -27,11 +27,7 @@ namespace download_manager
             m_Downloader = new FileDownload { m_DataGrid = downloadDataGridView };
             ManageDownloadDataGridView();
             m_optionsForm = new OptionsForm();
-
-            if (File.Exists("F:\\save.bin"))
-            {
-                m_numberOfSimultaneousDownloads = OptionsForm.ReadFromBinaryFile<int>("F:\\save.bin");
-            }
+            recoverThreadCount();
         }
 
         private void ManageDownloadDataGridView()
@@ -70,6 +66,22 @@ namespace download_manager
 
             m_isSaveSelected = true;
             m_isUrlSelected = true;
+        }
+
+        private void recoverThreadCount()
+        {
+            string recoverPath = Environment.CurrentDirectory;
+
+            recoverPath += "\\save.bin";
+
+            if (File.Exists(recoverPath))
+            {
+                m_numberOfSimultaneousDownloads = OptionsForm.ReadFromBinaryFile<int>(recoverPath);
+            }
+            else
+            {
+                m_numberOfSimultaneousDownloads = 1;
+            }
         }
 
         private void SaveTheFileDialog(string url)

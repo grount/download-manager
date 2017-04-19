@@ -7,10 +7,11 @@ namespace download_manager
     public partial class OptionsForm : Form
     {
         public int m_simultaneousDownloadsCount { get; set; }
-
+        public string m_serializationPath;
         public OptionsForm()
         {
             InitializeComponent();
+            m_serializationPath = Environment.CurrentDirectory + "\\save.bin";
             deserializePreviousState();
         }
 
@@ -42,7 +43,8 @@ namespace download_manager
         private void okButton_Click(object sender, EventArgs e)
         {
             MainWindow.m_numberOfSimultaneousDownloads = m_simultaneousDownloadsCount;
-            WriteToBinaryFile("F:\\save.bin", m_simultaneousDownloadsCount);
+
+            WriteToBinaryFile(m_serializationPath, m_simultaneousDownloadsCount);
             DialogResult = System.Windows.Forms.DialogResult.OK;
         }
 
@@ -53,11 +55,11 @@ namespace download_manager
 
         private void deserializePreviousState()
         {
-            if (File.Exists("F:\\save.bin"))
+            if (File.Exists(m_serializationPath))
             {
-                m_simultaneousDownloadsCount = ReadFromBinaryFile<int>("F:\\save.bin");
+                m_simultaneousDownloadsCount = ReadFromBinaryFile<int>(m_serializationPath);
+                maxThreadCountTrackBar.Value = m_simultaneousDownloadsCount;
             }
-            maxThreadCountTrackBar.Value = m_simultaneousDownloadsCount;
         }
     }
 }
